@@ -22,7 +22,8 @@ const SUPERVISORES = [
   "Joyce Francieli Silva",
   "Joyce Carla Santos Marques",
   "Renata Ferreira de Oliveira",
-  "Layra da Silva Reginaldo"
+  "Poliana",
+  "Lucas"
 ];
 
 const CORES_NIVEL = {
