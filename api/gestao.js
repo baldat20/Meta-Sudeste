@@ -6,7 +6,8 @@ const SUPERVISORES_LIST = [
   "Joyce Francieli Silva",
   "Joyce Carla Santos Marques",
   "Renata Ferreira de Oliveira",
-  "Layra da Silva Reginaldo"
+  "Lucas",
+  "Poliana"
 ];
 
 // ----------------------------------------
