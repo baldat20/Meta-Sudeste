@@ -1,5 +1,6 @@
 // /api/login.js
 const { google } = require("googleapis");
+const { COLUNAS, RANGES } = require("./_config");
 
 async function acessarPlanilha() {
   const auth = new google.auth.GoogleAuth({
@@ -37,8 +38,6 @@ module.exports = async (req, res) => {
     const matchGestao = usuariosRows.find(row => (row[0] === usuario && row[1] === senha));
 
     if (matchGestao) {
-      // matchGestao[0] = Usuario (nome de login), matchGestao[1] = senha, matchGestao[2] = Cargo (p.ex. "Supervisor" ou "Leticia ..."?)
-      // Como definimos antes, vamos retornar nome = matchGestao[0] (nome da pessoa) e cargo = matchGestao[2] (cargo texto)
       return res.json({
         success: true,
         perfil: "gestao",
@@ -47,45 +46,47 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 2) Analistas
+    // 2) Analistas (Consultor de COP)
+    const A = COLUNAS.analistas;
     const analResp = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "Relatorio Analistas!A2:O"
+      range: `Relatorio Analistas!${RANGES.analistas}`
     });
- for (let row of (analResp.data.values || [])) {
-  if (row[0] === usuario && row[2] === senha) { // senha dos analistas está na coluna C
-    return res.json({
-      tipo: "analista",
-      nome: row[0],
-      TMA: row[4],
-      TME: row[5],
 
-      // novos nomes com espaço
-      "Tempo Produtivo": row[6],
-      "Percentual ABS": row[7],
-      "Percentual Salário": row[13],
+    for (let row of (analResp.data.values || [])) {
+      // usuário pode digitar o nome (COLABORADORES) ou o LOGIN
+      if ((row[A.nome] === usuario || row[A.login] === usuario) && row[A.senha] === senha) {
+        return res.json({
+          tipo: "analista",
+          nome: row[A.nome],
+          "CA Reparo": row[A.caReparo],
+          "CA Mud End": row[A.caMudEnd],
+          "% ABS": row[A.abs],
+          "Tempo Prod": row[A.tempoProd],
+          "Percentual Salário": row[A.salario],
+          Nivel: row[A.nivel]
+        });
+      }
+    }
 
-      Nivel: row[14]
-    });
-  }
-}
-
-
-    // 3) Auxiliares
+    // 3) Auxiliares (Auxiliar de COP)
+    const X = COLUNAS.auxiliares;
     const auxResp = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "Relatorio Auxiliares!A2:K"
+      range: `Relatorio Auxiliares!${RANGES.auxiliares}`
     });
+
     for (let row of (auxResp.data.values || [])) {
-      if (row[0] === usuario && row[1] === senha) { // senha auxiliares está na coluna B
+      if ((row[X.nome] === usuario || row[X.login] === usuario) && row[X.senha] === senha) {
         return res.json({
           tipo: "auxiliar",
-          nome: row[0],
-          EFICIENCIA: row[2],
-          VREP: row[3],
-          PercentualABS: row[4],
-          PercentualSalario: row[9],
-          Nivel: row[10]
+          nome: row[X.nome],
+          "CA Mud End": row[X.caMudEnd],
+          "CA Ativação": row[X.caAtivacao],
+          "% ABS": row[X.abs],
+          "Tempo Prod": row[X.tempoProd],
+          "Percentual Salário": row[X.salario],
+          Nivel: row[X.nivel]
         });
       }
     }

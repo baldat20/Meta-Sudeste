@@ -1,4 +1,5 @@
 const { google } = require("googleapis");
+const { COLUNAS, RANGES, colLetra } = require("./_config");
 
 // ----------------------------------------
 const SUPERVISORES_LIST = [
@@ -15,6 +16,7 @@ const NIVEL_ORDER = {
   "SUPERAÇÃO": 1,
   "DEFINIDA": 2,
   "TOLERÁVEL": 3,
+  "INSUFICIENTE": 4,
   "NÃO ATINGIU": 4
 };
 
@@ -72,40 +74,43 @@ module.exports = async (req, res) => {
     // ---------------- ANALISTAS
     const analistasResp = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "Relatorio Analistas!A2:P",
+      range: `Relatorio Analistas!${RANGES.analistas}`,
     });
 
     const analistasRows = analistasResp.data.values || [];
 
+    const CA = COLUNAS.analistas;
     const analistas = analistasRows.map(row => ({
-      nome: row[0] || "",
-      login: row[0] || "",
-      senha: row[2] || "",
-      tma: row[4] || "",
-      tme: row[5] || "",
-      tempoProd: row[6] || "",
-      abs: row[7] || "",
-      nivel: row[14] || "",
-      supervisao: row[15] || ""
+      nome: row[CA.nome] || "",
+      login: row[CA.login] || row[CA.nome] || "",
+      senha: row[CA.senha] || "",
+      caReparo: row[CA.caReparo] || "",
+      caMudEnd: row[CA.caMudEnd] || "",
+      abs: row[CA.abs] || "",
+      tempoProd: row[CA.tempoProd] || "",
+      nivel: row[CA.nivel] || "",
+      supervisao: row[CA.supervisao] || ""
     }));
 
     // ---------------- AUX
     const auxResp = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "Relatorio Auxiliares!A2:L",
+      range: `Relatorio Auxiliares!${RANGES.auxiliares}`,
     });
 
     const auxRows = auxResp.data.values || [];
 
+    const CX = COLUNAS.auxiliares;
     const auxiliares = auxRows.map(row => ({
-      nome: row[0] || "",
-      login: row[0] || "",
-      senha: row[1] || "",
-      eficiencia: row[2] || "",
-      vrep: row[3] || "",
-      abs: row[4] || "",
-      nivel: row[10] || "",
-      supervisao: row[11] || ""
+      nome: row[CX.nome] || "",
+      login: row[CX.login] || row[CX.nome] || "",
+      senha: row[CX.senha] || "",
+      caMudEnd: row[CX.caMudEnd] || "",
+      caAtivacao: row[CX.caAtivacao] || "",
+      abs: row[CX.abs] || "",
+      tempoProd: row[CX.tempoProd] || "",
+      nivel: row[CX.nivel] || "",
+      supervisao: row[CX.supervisao] || ""
     }));
 
     // ---------------- FILTROS
@@ -118,10 +123,10 @@ module.exports = async (req, res) => {
           nome: a.nome,
           login: a.login,
           senha: a.senha,
-          tma: a.tma,
-          tme: a.tme,
-          tempoProd: a.tempoProd,
+          caReparo: a.caReparo,
+          caMudEnd: a.caMudEnd,
           abs: a.abs,
+          tempoProd: a.tempoProd,
           nivel: a.nivel
         }))
         .sort(sortByNivel);
@@ -136,9 +141,10 @@ module.exports = async (req, res) => {
           nome: a.nome,
           login: a.login,
           senha: a.senha,
-          eficiencia: a.eficiencia,
-          vrep: a.vrep,
+          caMudEnd: a.caMudEnd,
+          caAtivacao: a.caAtivacao,
           abs: a.abs,
+          tempoProd: a.tempoProd,
           nivel: a.nivel
         }))
         .sort(sortByNivel);
@@ -214,17 +220,20 @@ const sheetId = process.env.SHEET_ID;
 const isCoord = solicitante==="Leticia Caroline Da Silva";
 
 // ===== ANALISTAS
+const CA = COLUNAS.analistas;
+const CX = COLUNAS.auxiliares;
+
 const analistasResp = await sheets.spreadsheets.values.get({
  spreadsheetId:sheetId,
- range:"Relatorio Analistas!A2:P"
+ range:`Relatorio Analistas!${RANGES.analistas}`
 });
 
 const analistas = analistasResp.data.values||[];
 
 for(let i=0;i<analistas.length;i++){
 
- const nomeUser = analistas[i][0];
- const sup = analistas[i][15];
+ const nomeUser = analistas[i][CA.nome];
+ const sup = analistas[i][CA.supervisao];
 
  if(nomeUser===usuario){
 
@@ -232,7 +241,7 @@ for(let i=0;i<analistas.length;i++){
 
      await sheets.spreadsheets.values.update({
        spreadsheetId:sheetId,
-       range:`Relatorio Analistas!C${i+2}`,
+       range:`Relatorio Analistas!${colLetra(CA.senha)}${i+2}`,
        valueInputOption:"RAW",
        requestBody:{values:[[novaSenha]]}
      });
@@ -247,15 +256,15 @@ for(let i=0;i<analistas.length;i++){
 // ===== AUX
 const auxResp = await sheets.spreadsheets.values.get({
  spreadsheetId:sheetId,
- range:"Relatorio Auxiliares!A2:L"
+ range:`Relatorio Auxiliares!${RANGES.auxiliares}`
 });
 
 const aux = auxResp.data.values||[];
 
 for(let i=0;i<aux.length;i++){
 
- const nomeUser = aux[i][0];
- const sup = aux[i][11];
+ const nomeUser = aux[i][CX.nome];
+ const sup = aux[i][CX.supervisao];
 
  if(nomeUser===usuario){
 
@@ -263,7 +272,7 @@ for(let i=0;i<aux.length;i++){
 
      await sheets.spreadsheets.values.update({
        spreadsheetId:sheetId,
-       range:`Relatorio Auxiliares!B${i+2}`,
+       range:`Relatorio Auxiliares!${colLetra(CX.senha)}${i+2}`,
        valueInputOption:"RAW",
        requestBody:{values:[[novaSenha]]}
      });
