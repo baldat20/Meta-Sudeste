@@ -99,7 +99,7 @@ header.topbar h1{font-size:24px;font-weight:800;}
     </select>
   </div>
   <div class="tabs" id="tabsRow" style="display:none;">
-    <button class="tab-btn active" id="tabAnal" onclick="mudarTab('analistas')">Analistas</button>
+    <button class="tab-btn active" id="tabAnal" onclick="mudarTab('analistas')">Consultores</button>
     <button class="tab-btn"        id="tabAux"  onclick="mudarTab('auxiliares')">Auxiliares</button>
   </div>
   <div id="bannerAux"></div>
@@ -194,16 +194,18 @@ function renderizarCards(){
   colaboradores.forEach(c=>grid.appendChild(criarCard(c)));
 }
 
+function pt(n){return String(n).replace(".",",");}
+
 function renderBannerAux(ind){
   const banner=document.getElementById("bannerAux");
   banner.innerHTML="";
-  if(TAB!=="auxiliares"||!ind||(ind.eficiencia===null&&ind.vrep===null)){banner.style.display="none";return;}
+  if(TAB!=="auxiliares"||!ind||(ind.caMudEnd===null&&ind.caAtivacao===null)){banner.style.display="none";return;}
   banner.style.display="flex";
-  const okEf=ind.eficiencia!==null&&ind.eficiencia>=ind.metaEficiencia;
-  const okVrep=ind.vrep!==null&&ind.vrep>=ind.metaVrep;
+  const okMud=ind.caMudEnd!==null&&ind.caMudEnd>=ind.metaCaMudEnd;
+  const okAtiv=ind.caAtivacao!==null&&ind.caAtivacao>=ind.metaCaAtivacao;
   const items=[
-    {label:"Eficiência Média da Equipe",val:ind.eficiencia!==null?ind.eficiencia+"%":"—",meta:"Meta: ≥"+ind.metaEficiencia+"%",icon:"⚙️",ok:okEf},
-    {label:"VREP 24h Média da Equipe",  val:ind.vrep!==null?ind.vrep+"%":"—",           meta:"Meta: ≥"+ind.metaVrep+"%",       icon:"🔧",ok:okVrep}
+    {label:"CA Mud End Médio da Equipe",val:ind.caMudEnd!==null?pt(ind.caMudEnd)+"%":"—",meta:"Meta: ≥"+pt(ind.metaCaMudEnd)+"%",icon:"🏠",ok:okMud},
+    {label:"CA Ativação Médio da Equipe",val:ind.caAtivacao!==null?pt(ind.caAtivacao)+"%":"—",meta:"Meta: ≥"+pt(ind.metaCaAtivacao)+"%",icon:"📶",ok:okAtiv}
   ];
   banner.innerHTML=`<span class="banner-titulo">Indicadores Gerais da Equipe</span>`+
     items.map(it=>`<div class="banner-card ${it.ok?"bc-ok":"bc-warn"}">
@@ -224,7 +226,7 @@ function criarCard(c){
     instavel:{icon:"⚠️",text:"Instável",cls:"instavel"},
     piora:{icon:"📉",text:"Atenção: Desvio",cls:"piora"},
     neutro:{icon:"—",text:"Sem histórico",cls:"neutro"},
-    sem_dados:{icon:"—",text:"Sem dados",cls:"neutro"}
+    sem_dados:{icon:"—",text:"Sem dados consolidados",cls:"neutro"}
   };
   const bi=badges[c.tendencia]||badges.neutro;
   const hoje=new Date();
@@ -246,7 +248,7 @@ function criarCard(c){
   }
 
   div.innerHTML=`
-    <div class="card-header"><div class="card-nome">${c.nome}</div><div class="card-cargo">${TAB==="analistas"?"Analista":"Auxiliar"}</div></div>
+    <div class="card-header"><div class="card-nome">${c.nome}</div><div class="card-cargo">${TAB==="analistas"?"Consultor":"Auxiliar"}</div></div>
     <div class="badge-tend ${bi.cls}">${bi.icon} ${bi.text}</div>
     <div class="timeline">
       ${step(h.m2||"",nomeMes(-2))}
@@ -263,9 +265,9 @@ function step(nivel,mes,isAtual=false){
   const cls=dotClass(nivel),label=nivel?abrev(nivel):"–",atual=isAtual?" atual":"";
   return`<div class="tl-step"><div class="tl-dot ${cls}${atual}" title="${nivel||"Sem dado"}">${label}</div><div class="tl-label">${nivel?nivelShort(nivel):"—"}</div><div class="tl-mes">${mes}</div></div>`;
 }
-function dotClass(n){if(!n)return"dot-vazio";const u=n.toUpperCase();if(u.includes("SUPER"))return"dot-super";if(u.includes("DEFIN"))return"dot-defin";if(u.includes("TOLER"))return"dot-toler";if(u.includes("NÃO")||u.includes("NAO"))return"dot-nao";return"dot-vazio";}
-function abrev(n){if(!n)return"–";const u=n.toUpperCase();if(u.includes("SUPER"))return"SUP";if(u.includes("DEFIN"))return"DEF";if(u.includes("TOLER"))return"TOL";if(u.includes("NÃO")||u.includes("NAO"))return"NÃO";return"–";}
-function nivelShort(n){if(!n)return"–";const u=n.toUpperCase();if(u.includes("SUPER"))return"Superação";if(u.includes("DEFIN"))return"Definida";if(u.includes("TOLER"))return"Tolerável";if(u.includes("NÃO")||u.includes("NAO"))return"Não Atingiu";return n;}
+function dotClass(n){if(!n)return"dot-vazio";const u=n.toUpperCase();if(u.includes("SUPER"))return"dot-super";if(u.includes("DEFIN"))return"dot-defin";if(u.includes("TOLER"))return"dot-toler";if(u.includes("INSUF")||u.includes("NÃO")||u.includes("NAO"))return"dot-nao";return"dot-vazio";}
+function abrev(n){if(!n)return"–";const u=n.toUpperCase();if(u.includes("SUPER"))return"SUP";if(u.includes("DEFIN"))return"DEF";if(u.includes("TOLER"))return"TOL";if(u.includes("INSUF"))return"INS";if(u.includes("NÃO")||u.includes("NAO"))return"NÃO";return"–";}
+function nivelShort(n){if(!n)return"–";const u=n.toUpperCase();if(u.includes("SUPER"))return"Superação";if(u.includes("DEFIN"))return"Definida";if(u.includes("TOLER"))return"Tolerável";if(u.includes("INSUF"))return"Insuficiente";if(u.includes("NÃO")||u.includes("NAO"))return"Não Atingiu";return n;}
 function setStatus(msg){const el=document.getElementById("statusMsg");el.textContent=msg;el.style.display=msg?"block":"none";}
 </script>
 </body>

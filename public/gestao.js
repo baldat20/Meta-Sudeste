@@ -30,7 +30,24 @@ const CORES_NIVEL = {
   "SUPERAÇÃO":    "nivel-super",
   "DEFINIDA":     "nivel-defin",
   "TOLERÁVEL":    "nivel-toler",
+  "INSUFICIENTE": "nivel-nao",
   "NÃO ATINGIU":  "nivel-nao"
+};
+
+// Colunas exibidas em cada aba: [título, campo devolvido pela API]
+const COLUNAS_TABELA = {
+  analistas: [
+    ["CA Reparo",  "caReparo"],
+    ["CA Mud End", "caMudEnd"],
+    ["% ABS",      "abs"],
+    ["Tempo Prod", "tempoProd"]
+  ],
+  auxiliares: [
+    ["CA Mud End",  "caMudEnd"],
+    ["CA Ativação", "caAtivacao"],
+    ["% ABS",       "abs"],
+    ["Tempo Prod",  "tempoProd"]
+  ]
 };
 
 let supervisaoSelecionada = null;
@@ -113,7 +130,7 @@ function montarMenuSupervisoras(supervisoresAPI) {
     btn.innerHTML = `
       <div>
         <strong>${index + 1}. ${sup}</strong><br>
-        <span class="sup-count">${analistasQtd} analistas • ${auxiliaresQtd} auxiliares</span>
+        <span class="sup-count">${analistasQtd} consultores • ${auxiliaresQtd} auxiliares</span>
       </div>
       <span class="sup-arrow">→</span>
     `;
@@ -139,8 +156,17 @@ function voltarParaSupervisoras() {
   document.getElementById("btnVoltarSup").style.display = "none";
 }
 
+function montarCabecalho(tipo) {
+  const cols = COLUNAS_TABELA[tipo] || [];
+  document.getElementById("tabelaHead").innerHTML =
+    `<th>Nome</th>` +
+    cols.map(c => `<th>${c[0]}</th>`).join("") +
+    `<th style="text-align:center;">Nível</th>`;
+}
+
 function selecionarAba(tipo) {
   tipoAtual = tipo;
+  montarCabecalho(tipo);
   document.getElementById("tabAnal").classList.toggle("active", tipo === "analistas");
   document.getElementById("tabAux").classList.toggle("active",  tipo === "auxiliares");
   carregarRelatorio(tipoAtual);
@@ -163,7 +189,7 @@ async function carregarRelatorio(tipo) {
     const resp  = await fetch(url);
     const dados = await resp.json();
     const lista = tipo === "analistas" ? dados.analistas : dados.auxiliares;
-    montarTabela(lista);
+    montarTabela(lista, tipo);
   } catch (e) {
     document.getElementById("tabelaBody").innerHTML = `
       <tr><td colspan="6">Erro ao carregar: ${e.message}</td></tr>
@@ -172,7 +198,7 @@ async function carregarRelatorio(tipo) {
 }
 
 // =============================
-function montarTabela(lista) {
+function montarTabela(lista, tipo) {
   if (!lista || lista.length === 0) {
     document.getElementById("tabelaBody").innerHTML = `
       <tr><td colspan="6" style="padding:20px">Nenhum dado encontrado.</td></tr>
@@ -180,16 +206,14 @@ function montarTabela(lista) {
     return;
   }
 
+  const cols = COLUNAS_TABELA[tipo] || [];
   let html = "";
   lista.forEach(row => {
     const corClass = CORES_NIVEL[(row.nivel || "").toUpperCase()] || "";
     html += `
       <tr>
         <td class="col-name">${row.nome}</td>
-        <td>${row.tma       || row.eficiencia || ""}</td>
-        <td>${row.tme       || row.vrep       || ""}</td>
-        <td>${row.tempoProd || ""}</td>
-        <td>${row.abs       || ""}</td>
+        ${cols.map(c => `<td>${row[c[1]] || ""}</td>`).join("")}
         <td style="text-align:center"><span class="badge ${corClass}">${row.nivel}</span></td>
       </tr>
     `;

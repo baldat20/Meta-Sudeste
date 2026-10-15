@@ -169,21 +169,15 @@ tbody td{ padding:18px; border-bottom:1px solid #eef4fb; }
   <button id="btnVoltarSup">⬅ Voltar para supervisoras</button>
 
   <div class="tabs" id="tabsRow">
-    <button class="tab-btn" id="tabAnal">Analista</button>
+    <button class="tab-btn" id="tabAnal">Consultor</button>
     <button class="tab-btn" id="tabAux">Auxiliar</button>
   </div>
 
   <div class="card" id="cardArea">
     <table>
       <thead>
-        <tr>
-          <th>Nome</th>
-          <th>TMA</th>
-          <th>TME</th>
-          <th>Tempo Prod</th>
-          <th>% ABS</th>
-          <th style="text-align:center;">Nível</th>
-        </tr>
+        <!-- cabeçalho montado pelo gestao.js conforme a aba (Consultor / Auxiliar) -->
+        <tr id="tabelaHead"></tr>
       </thead>
       <tbody id="tabelaBody"></tbody>
     </table>

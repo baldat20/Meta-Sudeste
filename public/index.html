@@ -2,13 +2,14 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Painel de Metas</title>
 
   <style>
     body { 
       font-family: Arial, sans-serif;
       margin: 0;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -25,7 +26,7 @@
       text-align: center;
     }
 
-    #dash { width: 800px; display:none; }
+    #dash { width: 960px; max-width: 94vw; display:none; margin: 20px 0; }
 
     #login input {
       padding: 10px;
@@ -40,23 +41,25 @@
          CARDS DE METAS
        -------------------- */
     #cardsMetas {
-      display: none;
       margin-bottom: 20px;
       display: flex;
-      gap: 15px;
+      gap: 12px;
       flex-wrap: wrap;
       justify-content: center;
     }
 
     .meta-card {
-      width: 230px;
+      width: 205px;
       background: #fff;
-      padding: 15px;
+      padding: 14px 12px;
       border-radius: 12px;
       box-shadow: 0 6px 14px rgba(0,0,0,0.15);
       text-align: center;
       font-weight: bold;
+      font-size: 14px;
     }
+
+    .meta-card > div { margin-bottom: 4px; }
 
     .sup-card { background: #c8f7c5; }
     .def-card { background: #fff3b2; }
@@ -64,10 +67,13 @@
     .insuf-card { background: #f8bbbb; }
 
     .meta-title {
-      font-size: 18px;
+      font-size: 17px;
       margin-bottom: 8px;
       text-transform: uppercase;
     }
+
+    .pts { font-size: 11px; font-weight: normal; color: #555; }
+    .pont { font-size: 12px; font-weight: normal; color: #444; }
 
     /* --------------------  
         FEEDBACK
@@ -120,79 +126,8 @@
 
   <div id="dash">
 
-    <!-- CARDS DE METAS -->
-    <div id="cardsMetas">
-
-      <!-- ---------------- CARDS ANALISTAS ---------------- -->
-      <div id="cardsAnalistas" style="display:none">
-
-        <div class="meta-card sup-card">
-          <div class="meta-title">SUPERAÇÃO</div>
-          <div>TMA: <strong>00:08:00</strong></div>
-          <div>TME: <strong>00:00:35</strong></div>
-          <div>Produtivo: <strong>06:20:00</strong></div>
-          <div>Abs: <strong>10%</strong></div>
-          <div>Atingimento: <strong>60%</strong></div>
-        </div>
-
-        <div class="meta-card def-card">
-          <div class="meta-title">DEFINIDA</div>
-          <div>TMA: <strong>00:08:40</strong></div>
-          <div>TME: <strong>00:00:45</strong></div>
-          <div>Produtivo: <strong>06:20:00</strong></div>
-          <div>Abs: <strong>10%</strong></div>
-          <div>Atingimento: <strong>40%</strong></div>
-        </div>
-
-        <div class="meta-card tol-card">
-          <div class="meta-title">TOLERÁVEL</div>
-          <div>TMA: <strong>00:09:30</strong></div>
-          <div>TME: <strong>00:01:00</strong></div>
-          <div>Produtivo: <strong>06:20:00</strong></div>
-          <div>Abs: <strong>10%</strong></div>
-          <div>Atingimento: <strong>20%</strong></div>
-        </div>
-
-      </div>
-
-      <!-- ---------------- CARDS AUXILIARES ---------------- -->
-      <div id="cardsAuxiliares" style="display:none">
-
-        <div class="meta-card sup-card">
-          <div class="meta-title">SUPERAÇÃO</div>
-          <div>Eficiência: <strong>86.9%</strong></div>
-          <div>Reparo 24h: <strong>90%</strong></div>
-          <div>% ABS: <strong>10%</strong></div>
-          <div>Atingimento: <strong>60%</strong></div>
-        </div>
-
-        <div class="meta-card def-card">
-          <div class="meta-title">DEFINIDA</div>
-          <div>Eficiência: <strong>81.9%</strong></div>
-          <div>Reparo 24h: <strong>85%</strong></div>
-          <div>% ABS: <strong><=10%</strong></div>
-          <div>Atingimento: <strong>40%</strong></div>
-        </div>
-
-        <div class="meta-card tol-card">
-          <div class="meta-title">TOLERÁVEL</div>
-          <div>Eficiência: <strong>76.9%</strong></div>
-          <div>Reparo 24h: <strong>80%</strong></div>
-          <div>% ABS: <strong>10%</strong></div>
-          <div>Atingimento: <strong>20%</strong></div>
-        </div>
-
-        <div class="meta-card insuf-card">
-          <div class="meta-title">INSUFICIENTE</div>
-          <div>Eficiência: <strong>0%</strong></div>
-          <div>Reparo 24h: <strong>0%</strong></div>
-          <div>% ABS: <strong>>10%</strong></div>
-          <div>Atingimento: <strong>0%</strong></div>
-        </div>
-
-      </div>
-
-    </div>
+    <!-- CARDS DE METAS (montados pelo JavaScript conforme o cargo) -->
+    <div id="cardsMetas"></div>
 
     <h2 id="nome"></h2>
     <h3 id="cargo"></h3>
@@ -207,62 +142,123 @@
 
 <script>
 
+  /* =====================================================
+     METAS set/26  (ajuste aqui se as metas mudarem)
+     metas = [SUPERAÇÃO, DEFINIDA, TOLERÁVEL]
+     pesos = pontos ganhos em cada faixa
+     tipo  = "maior" (quanto maior melhor) | "menor" (quanto menor melhor)
+     campo = nome da chave devolvida por /api/login
+     ===================================================== */
+  const FAIXAS = [
+    { nome: "SUPERAÇÃO",    cls: "sup-card",   ating: "60%", pont: "10 pontos ou mais" },
+    { nome: "DEFINIDA",     cls: "def-card",   ating: "40%", pont: "De 7 a 9,9 pontos" },
+    { nome: "TOLERÁVEL",    cls: "tol-card",   ating: "20%", pont: "De 5 a 6,9 pontos" },
+    { nome: "INSUFICIENTE", cls: "insuf-card", ating: "0%",  pont: "De 0 a 4,9 pontos" }
+  ];
+
+  const IND = {
+    caReparo:   { campo: "CA Reparo",   label: "CA Reparo",   tipo: "maior", unid: "pct",
+                  metas: [91.4, 86.4, 81.4], pesos: [2, 1.5, 1.25], ajuste: "Melhorar CA Reparo" },
+    caMudEnd:   { campo: "CA Mud End",  label: "CA Mud End",  tipo: "maior", unid: "pct",
+                  metas: [88.9, 83.9, 78.9], pesos: [2, 1.5, 1.25], ajuste: "Melhorar CA Mud End" },
+    caAtivacao: { campo: "CA Ativação", label: "CA Ativação", tipo: "maior", unid: "pct",
+                  metas: [89.1, 84.1, 79.1], pesos: [2, 1.5, 1.25], ajuste: "Melhorar CA Ativação" },
+    abs:        { campo: "% ABS",       label: "% ABS",       tipo: "menor", unid: "pct",
+                  metas: [7.5, 10.0, 12.5],  pesos: [5, 3, 1.5],    ajuste: "Melhorar frequência (% ABS)" },
+    tempoProd:  { campo: "Tempo Prod",  label: "Tempo Prod",  tipo: "maior", unid: "hora",
+                  metas: ["06:35:00", "06:20:00", "06:05:00"], pesos: [2, 1.5, 1], ajuste: "Aumentar tempo produtivo" }
+  };
+
+  const PERFIS = {
+    analista: { titulo: "CONSULTOR DE COP", inds: [IND.caReparo, IND.caMudEnd, IND.abs, IND.tempoProd] },
+    auxiliar: { titulo: "AUXILIAR DE COP",  inds: [IND.caMudEnd, IND.caAtivacao, IND.abs, IND.tempoProd] }
+  };
+
+  /* ---------------------- UTILITÁRIOS ---------------------- */
   function parseTime(str) {
-    if (!str) return 0;
-    const p = str.split(":").map(Number);
-    return p[0]*3600 + p[1]*60 + (p[2]||0);
+    if (!str) return null;
+    const p = String(str).split(":").map(Number);
+    if (p.some(isNaN)) return null;
+    return (p[0] || 0) * 3600 + (p[1] || 0) * 60 + (p[2] || 0);
   }
 
-  /* ---------------------- ANALISTAS ---------------------- */
-  function calcularIndicadoresAnalista(data) {
-
-    const TMA = parseTime(data.TMA);
-    const TME = parseTime(data.TME);
-    const PROD = parseTime(data["Tempo Produtivo"]);
-    const ABS = parseFloat(data["Percentual ABS"].replace("%",""));
-
-    const okTMA = TMA <= parseTime("00:08:00");
-    const okTME = TME <= parseTime("00:00:35");
-    const okProd = PROD >= parseTime("06:20:00");
-    const okAbs = ABS <= 10;
-
-    if (okTMA && okTME && okProd && okAbs) {
-      return { msg:"Manter desempenho", tipo:"ok" };
-    }
-
-    let ajustes = [];
-    if (!okTMA) ajustes.push("Ajustar TMA");
-    if (!okTME) ajustes.push("Ajustar TME");
-    if (!okProd) ajustes.push("Aumentar tempo produtivo");
-    if (!okAbs) ajustes.push("Melhorar frequência");
-
-    return { msg: ajustes.join(", "), tipo:"warn" };
+  // aceita "91,4%", "91.4%" ou "91,4"
+  function parseNum(str) {
+    const n = parseFloat(String(str == null ? "" : str).replace("%", "").replace(/\s/g, "").replace(",", "."));
+    return isNaN(n) ? null : n;
   }
 
-  /* ---------------------- AUXILIARES ---------------------- */
-  function calcularIndicadoresAuxiliar(data) {
-
-    const ef = parseFloat((data.EFICIENCIA || "0").replace("%",""));
-    const rep = parseFloat((data.VREP || "0").replace("%",""));
-    const abs = parseFloat((data.PercentualABS || "0").replace("%",""));
-
-    const okEf = ef >= 86.9;
-    const okRep = rep >= 90;
-    const okAbs = abs <= 10;
-
-    if (okEf && okRep && okAbs) {
-      return { msg:"Manter desempenho", tipo:"ok" };
-    }
-
-    let ajustes = [];
-    if (!okEf) ajustes.push("Melhorar eficiência");
-    if (!okRep) ajustes.push("Melhorar reparo 24h");
-    if (!okAbs) ajustes.push("Melhorar %ABS");
-
-    return { msg: ajustes.join(", "), tipo:"warn" };
+  function valorIndicador(ind, data) {
+    return ind.unid === "hora" ? parseTime(data[ind.campo]) : parseNum(data[ind.campo]);
   }
 
+  function metaNumerica(ind, i) {
+    return ind.unid === "hora" ? parseTime(ind.metas[i]) : ind.metas[i];
+  }
 
+  function atingiu(ind, valor, i) {
+    const meta = metaNumerica(ind, i);
+    return ind.tipo === "maior" ? valor >= meta : valor <= meta;
+  }
+
+  function fmtMeta(ind, i) {
+    const m = ind.metas[i];
+    return ind.unid === "hora" ? m : m.toFixed(1).replace(".", ",") + "%";
+  }
+
+  function fmtPeso(p) {
+    return String(p).replace(".", ",");
+  }
+
+  /* ---------------------- CARDS DE METAS ---------------------- */
+  function montarCards(perfil) {
+    const inds = PERFIS[perfil].inds;
+
+    cardsMetas.innerHTML = FAIXAS.map((f, i) => {
+      const linhas = inds.map(ind => {
+        let sinal, texto, peso;
+        if (i < 3) {
+          sinal = ind.tipo === "maior" ? "≥ " : "≤ ";
+          texto = fmtMeta(ind, i);
+          peso  = fmtPeso(ind.pesos[i]);
+        } else {
+          // INSUFICIENTE = pior que a faixa TOLERÁVEL
+          sinal = ind.tipo === "maior" ? "&lt; " : "&gt; ";
+          texto = fmtMeta(ind, 2);
+          peso  = "0";
+        }
+        return `<div>${ind.label}: <strong>${sinal}${texto}</strong> <span class="pts">${peso} pts</span></div>`;
+      }).join("");
+
+      return `
+        <div class="meta-card ${f.cls}">
+          <div class="meta-title">${f.nome}</div>
+          ${linhas}
+          <div>Atingimento: <strong>${f.ating}</strong></div>
+          <div class="pont">${f.pont}</div>
+        </div>`;
+    }).join("");
+  }
+
+  /* ---------------------- FEEDBACK ---------------------- */
+  // "Manter desempenho" quando TODOS os indicadores estão na meta de SUPERAÇÃO
+  function calcularIndicadores(perfil, data) {
+    const ajustes = [];
+    let avaliados = 0;
+
+    PERFIS[perfil].inds.forEach(ind => {
+      const v = valorIndicador(ind, data);
+      if (v === null) return;
+      avaliados++;
+      if (!atingiu(ind, v, 0)) ajustes.push(ind.ajuste);
+    });
+
+    if (!avaliados) return { msg: "Sem dados dos indicadores", tipo: "warn" };
+    if (!ajustes.length) return { msg: "Manter desempenho", tipo: "ok" };
+    return { msg: ajustes.join(", "), tipo: "warn" };
+  }
+
+  /* ---------------------- LOGIN ---------------------- */
   async function entrar() {
     const u = usuario.value;
     const s = senha.value;
@@ -287,25 +283,11 @@
     dash.style.display = "block";
 
     nome.innerText = data.nome;
-    cargo.innerText = data.tipo.toUpperCase();
+    cargo.innerText = (PERFIS[data.tipo] || {}).titulo || data.tipo.toUpperCase();
 
-    // Exibe os cards corretos
-    cardsMetas.style.display = "flex";
-
-    if (data.tipo === "analista") {
-      cardsAnalistas.style.display = "flex";
-      cardsAuxiliares.style.display = "none";
-
-      const result = calcularIndicadoresAnalista(data);
-      indicadoresMensagem.innerText = result.msg;
-      indicadoresMensagem.className = result.tipo === "ok" ? "ok-msg" : "warn-msg";
-    }
-
-    if (data.tipo === "auxiliar") {
-      cardsAnalistas.style.display = "none";
-      cardsAuxiliares.style.display = "flex";
-
-      const result = calcularIndicadoresAuxiliar(data);
+    if (PERFIS[data.tipo]) {
+      montarCards(data.tipo);
+      const result = calcularIndicadores(data.tipo, data);
       indicadoresMensagem.innerText = result.msg;
       indicadoresMensagem.className = result.tipo === "ok" ? "ok-msg" : "warn-msg";
     }
