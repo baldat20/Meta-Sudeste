@@ -145,11 +145,10 @@ async function carregarDados(){
 }
 
 function inicializarUI(){
-  const isCoord=normalize(CARGO)===normalize("Leticia Caroline Da Silva");
   document.getElementById("tabsRow").style.display="flex";
   document.getElementById("legenda").style.display="flex";
   setStatus("");
-  if(isCoord&&DADOS.supervisores){
+  if(DADOS.supervisores){
     const sel=document.getElementById("selectSup");
     Object.keys(DADOS.supervisores).forEach(s=>{
       const o=document.createElement("option");o.value=s;o.textContent=s;sel.appendChild(o);
@@ -171,10 +170,9 @@ function filtrarSupervisao(){SUP_SEL=document.getElementById("selectSup").value;
 function renderizarCards(){
   const grid=document.getElementById("gridCards");
   grid.innerHTML="";
-  const isCoord=normalize(CARGO)===normalize("Leticia Caroline Da Silva");
   let colaboradores=[],indGerais=null;
 
-  if(isCoord&&DADOS?.supervisores){
+  if(DADOS?.supervisores){
     const sups=DADOS.supervisores;
     const keys=SUP_SEL?[SUP_SEL]:Object.keys(sups);
     keys.forEach(sup=>{(sups[sup]?.[TAB]||[]).forEach(c=>colaboradores.push({...c,_sup:sup}));});

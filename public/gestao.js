@@ -14,18 +14,6 @@ const cargo = urlParams.get("cargo");
 sessionStorage.setItem("nome",  nome);
 sessionStorage.setItem("cargo", cargo);
 
-// =============================
-// Supervisoras da coordenação
-// =============================
-const SUPERVISORES = [
-  "Erika Silvestre Nunes",
-  "Joyce Francieli Silva",
-  "Joyce Carla Santos Marques",
-  "Renata Ferreira de Oliveira",
-  "Poliana",
-  "Lucas"
-];
-
 const CORES_NIVEL = {
   "SUPERAÇÃO":    "nivel-super",
   "DEFINIDA":     "nivel-defin",
@@ -53,18 +41,6 @@ const COLUNAS_TABELA = {
 let supervisaoSelecionada = null;
 let tipoAtual = "analistas";
 
-function isCoord() {
-  return cargo === "Leticia Caroline Da Silva";
-}
-
-function normalize(str) {
-  return (str || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
 
 // =============================
 // Inicialização
@@ -77,34 +53,44 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("tabAux").onclick  = () => selecionarAba("auxiliares");
   document.getElementById("btnVoltarSup").onclick = voltarParaSupervisoras;
 
-  // ✅ Exibe botão Acompanhamento para supervisoras e coord
-  const todosGestores = [...SUPERVISORES, "Leticia Caroline Da Silva"];
-  const ehGestor = todosGestores.some(s => normalize(s) === normalize(cargo));
-  if (ehGestor) {
-    const btn = document.getElementById("btnAcomp");
-    if (btn) btn.style.display = "inline-block";
-  }
-
-  if (isCoord()) {
-    carregarResumoSupervisoras();
-  } else {
-    supervisaoSelecionada = nome;
-    document.getElementById("tabsRow").style.display = "flex";
-    selecionarAba("analistas");
-  }
+  // A API (aba Gestão) diz se a pessoa é coordenação ou supervisão
+  iniciar();
 });
 
 // =============================
-// Buscar supervisoras via API
+// Descobre o perfil da pessoa logada (coordenação x supervisão)
 // =============================
-async function carregarResumoSupervisoras() {
-  const url = `/api/gestao?cargo=${encodeURIComponent(cargo)}`;
+async function iniciar() {
   try {
-    const resp  = await fetch(url);
+    const resp  = await fetch(`/api/gestao?cargo=${encodeURIComponent(cargo)}`);
     const dados = await resp.json();
-    montarMenuSupervisoras(dados.supervisores || {});
+
+    if (resp.status === 403) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    if (dados.erro) {
+      alert("Erro ao carregar: " + dados.erro);
+      return;
+    }
+
+    // supervisão e coordenação têm acesso ao Acompanhamento
+    const btn = document.getElementById("btnAcomp");
+    if (btn) btn.style.display = "inline-block";
+
+    if (dados.supervisores) {
+      // COORDENAÇÃO: vê todas as supervisões
+      montarMenuSupervisoras(dados.supervisores);
+    } else {
+      // SUPERVISÃO: vê só os seus colaboradores
+      supervisaoSelecionada = dados.supervisao || nome;
+      document.getElementById("tabsRow").style.display = "flex";
+      selecionarAba("analistas");
+    }
   } catch (e) {
-    console.error("Erro ao carregar resumo:", e);
+    console.error("Erro ao iniciar:", e);
+    alert("Erro ao carregar: " + e.message);
   }
 }
 
@@ -120,7 +106,7 @@ function montarMenuSupervisoras(supervisoresAPI) {
     </h2>
   `;
 
-  SUPERVISORES.forEach((sup, index) => {
+  Object.keys(supervisoresAPI).forEach((sup, index) => {
     const info = supervisoresAPI[sup] || {};
     const analistasQtd  = (info.analistas  || []).length;
     const auxiliaresQtd = (info.auxiliares || []).length;

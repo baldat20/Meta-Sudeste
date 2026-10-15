@@ -192,28 +192,19 @@ async function carregar(){
 
     let todos=[];
 
-    // COORD
-    if(cargo === "Leticia Caroline Da Silva"){
+    // A API (aba Gestão) decide o que a pessoa vê:
+    //  - coordenação -> "supervisores" (todas as supervisões)
+    //  - supervisão  -> "analistas" e "auxiliares" (só os seus)
+    const resp = await fetch(`/api/gestao?cargo=${encodeURIComponent(cargo)}`);
+    const data = await resp.json();
 
-      const resp = await fetch(`/api/gestao?cargo=${encodeURIComponent(cargo)}`);
-      const data = await resp.json();
-
-      Object.values(data.supervisores || {}).forEach(sup=>{
+    if(data.supervisores){
+      Object.values(data.supervisores).forEach(sup=>{
         todos.push(...(sup.analistas || []));
         todos.push(...(sup.auxiliares || []));
       });
-
     }else{
-
-      const resp1 = await fetch(`/api/gestao?tipo=analistas&supervisao=${encodeURIComponent(nome)}&cargo=${encodeURIComponent(nome)}`);
-      const data1 = await resp1.json();
-      const analistas = data1.analistas || [];
-
-      const resp2 = await fetch(`/api/gestao?tipo=auxiliares&supervisao=${encodeURIComponent(nome)}&cargo=${encodeURIComponent(nome)}`);
-      const data2 = await resp2.json();
-      const auxiliares = data2.auxiliares || [];
-
-      todos=[...analistas,...auxiliares];
+      todos=[...(data.analistas || []),...(data.auxiliares || [])];
     }
 
     dadosGlobais = todos;
