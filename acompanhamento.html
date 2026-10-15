@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Acompanhamento – Painel de Gestão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:#42a7f5; --blue-dk:#0e76d1;
+  --green:#42f554; --purple:#a129d9; --yellow:#dbd951; --red:#db4c42; --gray:#ddd;
+  --nivel-super-bg:var(--purple); --nivel-super-txt:#fff;
+  --nivel-defin-bg:var(--green);  --nivel-defin-txt:#064d11;
+  --nivel-toler-bg:var(--yellow); --nivel-toler-txt:#222;
+  --nivel-nao-bg:var(--red);      --nivel-nao-txt:#fff;
+  --nivel-vazio-bg:var(--gray);   --nivel-vazio-txt:#666;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Montserrat',system-ui,Arial;background:linear-gradient(135deg,#428bfc 0%,#b9e2ff 100%);min-height:100vh;}
+header.topbar{background:#000;color:#fff;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;}
+header.topbar h1{font-size:24px;font-weight:800;}
+.top-actions{display:flex;gap:12px;align-items:center;}
+.btn-voltar{background:transparent;border:2px solid white;color:white;padding:9px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;}
+.subbar{height:8px;background:var(--blue);}
+.container{max-width:1300px;margin:22px auto;padding:0 18px;}
+#filtroSup{display:none;margin-bottom:18px;align-items:center;gap:12px;flex-wrap:wrap;}
+#filtroSup label{font-weight:700;color:#fff;font-size:15px;}
+#filtroSup select{padding:9px 14px;border-radius:10px;border:none;font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.12);min-width:240px;}
+.tabs{display:flex;gap:14px;margin-bottom:18px;}
+.tab-btn{background:white;border-radius:34px;padding:11px 30px;font-size:17px;font-weight:700;border:2px solid rgba(0,0,0,.06);cursor:pointer;font-family:inherit;transition:all .2s;}
+.tab-btn.active{background:var(--blue);color:white;border-color:var(--blue);}
+#bannerAux{display:none;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.banner-titulo{color:#fff;font-weight:800;font-size:13px;opacity:.85;white-space:nowrap;}
+.banner-card{background:white;border-radius:12px;padding:10px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 12px rgba(0,0,0,.1);min-width:190px;}
+.bc-label{font-size:11px;font-weight:700;color:#888;}
+.bc-val{font-size:20px;font-weight:800;line-height:1;}
+.bc-meta{font-size:10px;color:#aaa;font-weight:600;}
+.bc-icon{font-size:22px;}
+.bc-ok{border-left:5px solid #42f554;}
+.bc-warn{border-left:5px solid #db4c42;}
+.legend{display:none;gap:14px;flex-wrap:wrap;margin-bottom:18px;align-items:center;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#fff;}
+.legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+#gridCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.colab-card{background:white;border-radius:16px;padding:18px 20px;box-shadow:0 6px 20px rgba(0,0,0,.08);border-left:6px solid var(--gray);transition:transform .15s,box-shadow .15s;}
+.colab-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.13);}
+.colab-card.melhora{border-left-color:var(--green);background:#f5fff6;}
+.colab-card.estavel{border-left-color:var(--blue);}
+.colab-card.instavel{border-left-color:var(--yellow);background:#fffdf0;}
+.colab-card.piora{border-left-color:var(--red);background:#fff7f7;}
+.colab-card.neutro,.colab-card.sem_dados{border-left-color:var(--gray);}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:8px;}
+.card-nome{font-weight:800;font-size:13px;line-height:1.35;flex:1;}
+.card-cargo{font-size:10px;font-weight:700;background:#f0f4ff;color:#555;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.badge-tend{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px;margin-bottom:14px;}
+.badge-tend.melhora{background:#e7ffe9;color:#1a7a2e;}
+.badge-tend.estavel{background:#e8f4ff;color:#0e5fa3;}
+.badge-tend.instavel{background:#fffbe6;color:#7a6400;}
+.badge-tend.piora{background:#ffe8e8;color:#9b1c1c;}
+.badge-tend.neutro,.badge-tend.sem_dados{background:#f0f0f0;color:#666;}
+.timeline{display:flex;align-items:flex-start;margin-bottom:14px;}
+.tl-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;}
+.tl-step::after{content:'';position:absolute;top:16px;right:-50%;width:100%;height:3px;background:#e0eaf5;z-index:0;}
+.tl-step:last-child::after{display:none;}
+.tl-dot{width:33px;height:33px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;z-index:1;position:relative;text-align:center;}
+.tl-dot.atual{box-shadow:0 0 0 3px var(--blue-dk);}
+.tl-label{font-size:10px;font-weight:700;color:#666;margin-top:5px;text-align:center;}
+.tl-mes{font-size:9px;color:#aaa;font-weight:600;margin-top:1px;}
+.dot-super{background:var(--nivel-super-bg);color:var(--nivel-super-txt);}
+.dot-defin{background:var(--nivel-defin-bg);color:var(--nivel-defin-txt);}
+.dot-toler{background:var(--nivel-toler-bg);color:var(--nivel-toler-txt);}
+.dot-nao{background:var(--nivel-nao-bg);color:var(--nivel-nao-txt);}
+.dot-vazio{background:var(--nivel-vazio-bg);color:var(--nivel-vazio-txt);}
+.indicadores-fora{display:none;flex-wrap:wrap;gap:6px;padding-top:10px;border-top:1px dashed #f0d0d0;margin-top:2px;}
+.indicadores-fora.visivel{display:flex;}
+.ind-titulo{width:100%;font-size:10px;font-weight:700;color:#c0392b;margin-bottom:2px;}
+.ind-chip{font-size:10px;font-weight:700;color:#fff;background:#db4c42;padding:3px 9px;border-radius:12px;}
+.abs-chip{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;margin-top:10px;}
+#statusMsg{text-align:center;color:white;font-size:18px;font-weight:700;padding:60px 0;}
+.floating-sair{position:fixed;bottom:22px;left:22px;background:white;border:3px solid black;padding:11px 20px;border-radius:10px;font-weight:800;cursor:pointer;box-shadow:0 8px 16px rgba(0,0,0,.2);font-family:inherit;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>📊 Acompanhamento de Metas</h1>
+  <div class="top-actions">
+    <button class="btn-voltar" id="btnVoltar">⬅ Voltar ao Painel</button>
+    <div id="supNome" style="color:#fff;font-weight:700;font-size:14px;"></div>
+  </div>
+</header>
+<div class="subbar"></div>
+<div class="container">
+  <div id="filtroSup">
+    <label>Supervisão:</label>
+    <select id="selectSup" onchange="filtrarSupervisao()">
+      <option value="">Todas as supervisões</option>
+    </select>
+  </div>
+  <div class="tabs" id="tabsRow" style="display:none;">
+    <button class="tab-btn active" id="tabAnal" onclick="mudarTab('analistas')">Consultores</button>
+    <button class="tab-btn"        id="tabAux"  onclick="mudarTab('auxiliares')">Auxiliares</button>
+  </div>
+  <div id="bannerAux"></div>
+  <div class="legend" id="legenda">
+    <span class="legend-item"><span class="legend-dot" style="background:#42f554"></span>Melhora</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#42a7f5"></span>Estável</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#dbd951"></span>Instável</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#db4c42"></span>Piora / Desvio</span>
+    <span style="color:rgba(255,255,255,.55);font-size:11px;font-weight:600;">— Chips vermelhos = indicadores fora do padrão.</span>
+  </div>
+  <div id="statusMsg">Carregando dados...</div>
+  <div id="gridCards"></div>
+</div>
+<button class="floating-sair" id="btnSair">SAIR</button>
+<script>
+function normalize(str){return(str||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim().toLowerCase();}
+function parsePct(str){return parseFloat(String(str||"0").replace("%","").replace(",","."))||0;}
+
+let CARGO="",NOME="",DADOS=null,TAB="analistas",SUP_SEL="";
+
+window.addEventListener("DOMContentLoaded",()=>{
+  const urlP=new URLSearchParams(window.location.search);
+  CARGO=sessionStorage.getItem("cargo")||urlP.get("cargo")||"";
+  NOME =sessionStorage.getItem("nome") ||urlP.get("nome") ||"";
+  if(!CARGO){window.location.href="index.html";return;}
+  document.getElementById("supNome").textContent=NOME;
+  // BOTAO VOLTAR CORRIGIDO
+  document.getElementById("btnVoltar").onclick=()=>{
+    window.location.href=`gestao.html?nome=${encodeURIComponent(NOME)}&cargo=${encodeURIComponent(CARGO)}`;
+  };
+  document.getElementById("btnSair").onclick=()=>{window.location.href="index.html";};
+  carregarDados();
+});
+
+async function carregarDados(){
+  setStatus("Carregando dados...");
+  try{
+    const resp=await fetch("/api/acompanhamento?cargo="+encodeURIComponent(CARGO));
+    if(!resp.ok){const err=await resp.json().catch(()=>({}));setStatus("Erro: "+(err.erro||resp.status));return;}
+    DADOS=await resp.json();
+    inicializarUI();
+  }catch(e){setStatus("Erro de conexão: "+e.message);}
+}
+
+function inicializarUI(){
+  const isCoord=normalize(CARGO)===normalize("Leticia Caroline Da Silva");
+  document.getElementById("tabsRow").style.display="flex";
+  document.getElementById("legenda").style.display="flex";
+  setStatus("");
+  if(isCoord&&DADOS.supervisores){
+    const sel=document.getElementById("selectSup");
+    Object.keys(DADOS.supervisores).forEach(s=>{
+      const o=document.createElement("option");o.value=s;o.textContent=s;sel.appendChild(o);
+    });
+    document.getElementById("filtroSup").style.display="flex";
+  }
+  renderizarCards();
+}
+
+function mudarTab(tab){
+  TAB=tab;
+  document.getElementById("tabAnal").classList.toggle("active",tab==="analistas");
+  document.getElementById("tabAux").classList.toggle("active",tab==="auxiliares");
+  renderizarCards();
+}
+
+function filtrarSupervisao(){SUP_SEL=document.getElementById("selectSup").value;renderizarCards();}
+
+function renderizarCards(){
+  const grid=document.getElementById("gridCards");
+  grid.innerHTML="";
+  const isCoord=normalize(CARGO)===normalize("Leticia Caroline Da Silva");
+  let colaboradores=[],indGerais=null;
+
+  if(isCoord&&DADOS?.supervisores){
+    const sups=DADOS.supervisores;
+    const keys=SUP_SEL?[SUP_SEL]:Object.keys(sups);
+    keys.forEach(sup=>{(sups[sup]?.[TAB]||[]).forEach(c=>colaboradores.push({...c,_sup:sup}));});
+    indGerais=SUP_SEL?sups[SUP_SEL]?.indicadoresGeraisAux:DADOS.indicadoresGeraisAux;
+  }else{
+    (DADOS?.[TAB]||[]).forEach(c=>colaboradores.push({...c,_sup:DADOS?.supervisao||""}));
+    indGerais=DADOS?.indicadoresGeraisAux||null;
+  }
+
+  renderBannerAux(indGerais);
+
+  if(!colaboradores.length){
+    grid.innerHTML='<p style="color:white;font-weight:700;padding:40px 0;">Nenhum colaborador encontrado.</p>';return;
+  }
+  const ordemTend={piora:0,instavel:1,neutro:2,sem_dados:3,estavel:4,melhora:5};
+  colaboradores.sort((a,b)=>(ordemTend[a.tendencia]??3)-(ordemTend[b.tendencia]??3));
+  colaboradores.forEach(c=>grid.appendChild(criarCard(c)));
+}
+
+function pt(n){return String(n).replace(".",",");}
+
+function renderBannerAux(ind){
+  const banner=document.getElementById("bannerAux");
+  banner.innerHTML="";
+  if(TAB!=="auxiliares"||!ind||(ind.caMudEnd===null&&ind.caAtivacao===null)){banner.style.display="none";return;}
+  banner.style.display="flex";
+  const okMud=ind.caMudEnd!==null&&ind.caMudEnd>=ind.metaCaMudEnd;
+  const okAtiv=ind.caAtivacao!==null&&ind.caAtivacao>=ind.metaCaAtivacao;
+  const items=[
+    {label:"CA Mud End Médio da Equipe",val:ind.caMudEnd!==null?pt(ind.caMudEnd)+"%":"—",meta:"Meta: ≥"+pt(ind.metaCaMudEnd)+"%",icon:"🏠",ok:okMud},
+    {label:"CA Ativação Médio da Equipe",val:ind.caAtivacao!==null?pt(ind.caAtivacao)+"%":"—",meta:"Meta: ≥"+pt(ind.metaCaAtivacao)+"%",icon:"📶",ok:okAtiv}
+  ];
+  banner.innerHTML=`<span class="banner-titulo">Indicadores Gerais da Equipe</span>`+
+    items.map(it=>`<div class="banner-card ${it.ok?"bc-ok":"bc-warn"}">
+      <span class="bc-icon">${it.icon}</span>
+      <div><div class="bc-label">${it.label}</div>
+      <div class="bc-val" style="color:${it.ok?"#1a7a2e":"#c0392b"}">${it.val}</div>
+      <div class="bc-meta">${it.meta} ${it.ok?"✅":"⚠️ Abaixo da meta"}</div></div>
+    </div>`).join("");
+}
+
+function criarCard(c){
+  const div=document.createElement("div");
+  div.className=`colab-card ${c.tendencia||"neutro"}`;
+  const h=c.historico||{};
+  const badges={
+    melhora:{icon:"📈",text:"Em Melhora",cls:"melhora"},
+    estavel:{icon:"➡️",text:"Estável",cls:"estavel"},
+    instavel:{icon:"⚠️",text:"Instável",cls:"instavel"},
+    piora:{icon:"📉",text:"Atenção: Desvio",cls:"piora"},
+    neutro:{icon:"—",text:"Sem histórico",cls:"neutro"},
+    sem_dados:{icon:"—",text:"Sem dados consolidados",cls:"neutro"}
+  };
+  const bi=badges[c.tendencia]||badges.neutro;
+  const hoje=new Date();
+  const nomeMes=off=>{const d=new Date(hoje.getFullYear(),hoje.getMonth()+off,1);return d.toLocaleString("pt-BR",{month:"short"}).replace(".","").toUpperCase();};
+
+  const fora=c.indicadoresFora||[];
+  const blocoFora=fora.length
+    ?`<div class="indicadores-fora visivel"><span class="ind-titulo">⚠️ Indicadores fora do padrão:</span>${fora.map(f=>`<span class="ind-chip">${f}</span>`).join("")}</div>`
+    :"";
+
+  let camposExtras="";
+  if(TAB==="auxiliares"&&c.abs!==undefined){
+    const absVal=parsePct(c.abs);
+    const absOk=absVal<=10;
+    camposExtras=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eef4fb;">
+      <span class="abs-chip" style="background:${absOk?"#e7ffe9":"#ffe8e8"};color:${absOk?"#1a7a2e":"#9b1c1c"};">
+        ABS Individual: ${c.abs||"—"} ${absOk?"✓":"⚠️"}
+      </span></div>`;
+  }
+
+  div.innerHTML=`
+    <div class="card-header"><div class="card-nome">${c.nome}</div><div class="card-cargo">${TAB==="analistas"?"Consultor":"Auxiliar"}</div></div>
+    <div class="badge-tend ${bi.cls}">${bi.icon} ${bi.text}</div>
+    <div class="timeline">
+      ${step(h.m2||"",nomeMes(-2))}
+      ${step(h.m1||"",nomeMes(-1))}
+      ${step(h.atual||"",nomeMes(0),true)}
+    </div>
+    ${blocoFora}
+    ${camposExtras}
+  `;
+  return div;
+}
+
+function step(nivel,mes,isAtual=false){
+  const cls=dotClass(nivel),label=nivel?abrev(nivel):"–",atual=isAtual?" atual":"";
+  return`<div class="tl-step"><div class="tl-dot ${cls}${atual}" title="${nivel||"Sem dado"}">${label}</div><div class="tl-label">${nivel?nivelShort(nivel):"—"}</div><div class="tl-mes">${mes}</div></div>`;
+}
+function dotClass(n){if(!n)return"dot-vazio";const u=n.toUpperCase();if(u.includes("SUPER"))return"dot-super";if(u.includes("DEFIN"))return"dot-defin";if(u.includes("TOLER"))return"dot-toler";if(u.includes("INSUF")||u.includes("NÃO")||u.includes("NAO"))return"dot-nao";return"dot-vazio";}
+function abrev(n){if(!n)return"–";const u=n.toUpperCase();if(u.includes("SUPER"))return"SUP";if(u.includes("DEFIN"))return"DEF";if(u.includes("TOLER"))return"TOL";if(u.includes("INSUF"))return"INS";if(u.includes("NÃO")||u.includes("NAO"))return"NÃO";return"–";}
+function nivelShort(n){if(!n)return"–";const u=n.toUpperCase();if(u.includes("SUPER"))return"Superação";if(u.includes("DEFIN"))return"Definida";if(u.includes("TOLER"))return"Tolerável";if(u.includes("INSUF"))return"Insuficiente";if(u.includes("NÃO")||u.includes("NAO"))return"Não Atingiu";return n;}
+function setStatus(msg){const el=document.getElementById("statusMsg");el.textContent=msg;el.style.display=msg?"block":"none";}
+</script>
+</body>
+</html>
