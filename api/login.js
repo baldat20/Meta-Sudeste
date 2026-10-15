@@ -1,6 +1,7 @@
 // /api/login.js
 const { google } = require("googleapis");
-const { COLUNAS, RANGES } = require("./_config");
+const { COLUNAS, RANGES, normalize } = require("./_config");
+const { lerGestao } = require("./_gestao");
 
 async function acessarPlanilha() {
   const auth = new google.auth.GoogleAuth({
@@ -29,20 +30,29 @@ module.exports = async (req, res) => {
     const sheets = await acessarPlanilha();
     const sheetId = process.env.SHEET_ID;
 
-    // 1) verificar aba usuarios primeiro (A: Usuario | B: Senha | C: Cargo/Nome da pessoa)
-    const usuariosResp = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "usuarios!A:C"
-    });
-    const usuariosRows = usuariosResp.data.values || [];
-    const matchGestao = usuariosRows.find(row => (row[0] === usuario && row[1] === senha));
+    // 1) aba Gestão primeiro (Nomes | Usuario | senha | Cargo)
+    let gestao = [];
+    try {
+      gestao = await lerGestao(sheets, sheetId);
+    } catch (e) {
+      // se a aba não puder ser lida, colaboradores ainda conseguem entrar
+      console.error("Erro ao ler aba Gestão:", e.message);
+    }
+
+    const matchGestao = gestao.find(p =>
+      (normalize(p.usuario) === normalize(usuario) || normalize(p.nome) === normalize(usuario)) &&
+      p.senha === senha
+    );
 
     if (matchGestao) {
+      if (!matchGestao.papel) {
+        return res.status(403).json({ erro: "Seu cargo não tem acesso ao painel." });
+      }
       return res.json({
         success: true,
         perfil: "gestao",
-        nome: matchGestao[0],
-        cargo: matchGestao[2] || "Gestão"
+        nome: matchGestao.nome,      // nome usado para filtrar os colaboradores (coluna Hierarquia)
+        cargo: matchGestao.cargo
       });
     }
 

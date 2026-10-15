@@ -1,13 +1,6 @@
 const { google } = require("googleapis");
 const { COLUNAS, METAS, RANGES, parseTime, parsePct } = require("./_config");
-
-const SUPERVISORES_LIST = [
-  "Erika Silvestre Nunes",
-  "Joyce Francieli Silva",
-  "Joyce Carla Santos Marques",
-  "Renata Ferreira de Oliveira",
-  "Layra da Silva Reginaldo"
-];
+const { lerGestao, identificar, listarSupervisores } = require("./_gestao");
 
 function normalize(str) {
   return (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
@@ -115,16 +108,23 @@ function calcIndicadoresGeraisAux(auxAtual, supervisorFiltro) {
 module.exports = async (req, res) => {
   try {
     const query = req.method === "GET" ? req.query : req.body;
-    const cargo = (query.cargo || "").trim();
+    // O front envia o NOME da pessoa logada no parâmetro "cargo"
+    const nomeLogado = (query.cargo || "").trim();
     const supervisao = query.supervisao || "";
 
-    const isCoord       = normalize(cargo) === normalize("Leticia Caroline Da Silva");
-    const isSupervisora = SUPERVISORES_LIST.map(normalize).includes(normalize(cargo));
-    if (!isCoord && !isSupervisora) return res.status(403).json({ erro: "Acesso não autorizado." });
+    const sheets  = await acessarPlanilha();
+    const sheetId = process.env.SHEET_ID;
 
-    const targetSup = supervisao || (isSupervisora ? cargo : null);
-    const sheets    = await acessarPlanilha();
-    const sheetId   = process.env.SHEET_ID;
+    // quem é a pessoa e o que ela pode ver (aba Gestão)
+    const gestao = await lerGestao(sheets, sheetId);
+    const pessoa = identificar(gestao, nomeLogado);
+    if (!pessoa || !pessoa.papel) return res.status(403).json({ erro: "Acesso não autorizado." });
+
+    const isCoord = pessoa.papel === "coordenacao";
+    const SUPERVISORES = listarSupervisores(gestao);
+
+    // supervisão vê SEMPRE só os seus colaboradores; coordenação vê todos (ou filtra por uma supervisão)
+    const targetSup = isCoord ? (supervisao || null) : pessoa.nome;
 
     const [analistasAtual, auxAtual, analistasM1, auxM1, analistasM2, auxM2] = await Promise.all([
       lerAba(sheets, sheetId, `Relatorio Analistas!${RANGES.analistas}`,  "analistas"),
@@ -175,11 +175,11 @@ module.exports = async (req, res) => {
 
     if (isCoord && !targetSup) {
       const resultado = {};
-      for (const sup of SUPERVISORES_LIST) resultado[sup] = montarPorSupervisao(sup);
-      return res.json({ supervisores: resultado, indicadoresGeraisAux: calcIndicadoresGeraisAux(auxAtual, null) });
+      for (const sup of SUPERVISORES) resultado[sup] = montarPorSupervisao(sup);
+      return res.json({ papel: pessoa.papel, supervisores: resultado, indicadoresGeraisAux: calcIndicadoresGeraisAux(auxAtual, null) });
     }
 
-    return res.json({ supervisao: targetSup, ...montarPorSupervisao(targetSup) });
+    return res.json({ papel: pessoa.papel, supervisao: targetSup, ...montarPorSupervisao(targetSup) });
 
   } catch (e) {
     console.error("Erro acompanhamento:", e);

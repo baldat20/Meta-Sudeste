@@ -39,11 +39,54 @@ const COLUNAS = {
   }
 };
 
+// ------------------------------------------------------------------
+// ABA DE GESTÃO (supervisão e coordenação)
+// Nomes | Usuario | senha | Cargo
+// ------------------------------------------------------------------
+const ABAS = {
+  gestao: "Gestão"   // nome exato da aba na planilha
+};
+
+const GESTAO = {
+  nome: 0,      // A  Nomes   (também é o nome que aparece na coluna Hierarquia dos colaboradores)
+  usuario: 1,   // B  Usuario
+  senha: 2,     // C  senha
+  cargo: 3      // D  Cargo
+};
+
 // Intervalos lidos de cada aba (precisam cobrir a última coluna usada)
 const RANGES = {
   analistas: "A2:P",
-  auxiliares: "A2:P"
+  auxiliares: "A2:P",
+  gestao: "A2:D"
 };
+
+function normalize(str) {
+  return (str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+// ------------------------------------------------------------------
+// PERMISSÕES a partir do texto da coluna "Cargo" da aba Gestão
+//   começa com "coordena" (Coordenador, Coordenadora...) -> vê todos os colaboradores
+//   começa com "supervis" (Supervisor, Supervisora...)   -> vê só os seus colaboradores
+//   qualquer outro cargo                                  -> sem acesso ao painel
+// Para liberar outro cargo (ex.: Gerente), adicione o prefixo na lista certa.
+// ------------------------------------------------------------------
+const CARGOS_COORDENACAO = ["coordena"];
+const CARGOS_SUPERVISAO  = ["supervis"];
+
+function papelDoCargo(cargo) {
+  const c = normalize(cargo);
+  if (!c) return null;
+  if (CARGOS_COORDENACAO.some(p => c.startsWith(p))) return "coordenacao";
+  if (CARGOS_SUPERVISAO.some(p => c.startsWith(p))) return "supervisao";
+  return null;
+}
 
 // índice da coluna -> letra (0 = A, 1 = B ...), usado ao gravar senha
 function colLetra(i) {
@@ -72,4 +115,4 @@ function parsePct(str) {
   return parseFloat(String(str || "0").replace("%", "").replace(",", ".")) || 0;
 }
 
-module.exports = { COLUNAS, METAS, RANGES, colLetra, parseTime, parsePct };
+module.exports = { COLUNAS, METAS, RANGES, ABAS, GESTAO, colLetra, normalize, papelDoCargo, parseTime, parsePct };

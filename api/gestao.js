@@ -1,15 +1,6 @@
 const { google } = require("googleapis");
 const { COLUNAS, RANGES, colLetra } = require("./_config");
-
-// ----------------------------------------
-const SUPERVISORES_LIST = [
-  "Erika Silvestre Nunes",
-  "Joyce Francieli Silva",
-  "Joyce Carla Santos Marques",
-  "Renata Ferreira de Oliveira",
-  "Lucas",
-  "Poliana"
-];
+const { lerGestao, identificar, listarSupervisores } = require("./_gestao");
 
 // ----------------------------------------
 const NIVEL_ORDER = {
@@ -66,10 +57,23 @@ module.exports = async (req, res) => {
 
     const tipo = (query.tipo || "").toLowerCase();
     const supervisao = query.supervisao || "";
-    const cargo = (query.cargo || "").trim();
+
+    // O front envia o NOME da pessoa logada no parâmetro "cargo"
+    const nomeLogado = (query.cargo || "").trim();
 
     const sheets = await acessarPlanilha();
     const sheetId = process.env.SHEET_ID;
+
+    // ---------------- QUEM É A PESSOA (aba Gestão)
+    const gestao = await lerGestao(sheets, sheetId);
+    const pessoa = identificar(gestao, nomeLogado);
+
+    if (!pessoa || !pessoa.papel) {
+      return res.status(403).json({ erro: "Acesso não autorizado." });
+    }
+
+    const isCoord = pessoa.papel === "coordenacao";
+    const SUPERVISORES = listarSupervisores(gestao);
 
     // ---------------- ANALISTAS
     const analistasResp = await sheets.spreadsheets.values.get({
@@ -150,51 +154,41 @@ module.exports = async (req, res) => {
         .sort(sortByNivel);
     }
 
-    const isCoord = cargo === "Leticia Caroline Da Silva";
+    function responderSupervisao(nomeSup) {
+      const respObj = {
+        papel: pessoa.papel,
+        supervisao: nomeSup,
+        analistas: filtrarAnalistasPor(nomeSup),
+        auxiliares: filtrarAuxiliaresPor(nomeSup),
+      };
 
-    // ---------------- COORD TODAS
+      if (tipo === "analistas") return res.json({ analistas: respObj.analistas });
+      if (tipo === "auxiliares") return res.json({ auxiliares: respObj.auxiliares });
+
+      return res.json(respObj);
+    }
+
+    // ---------------- COORDENAÇÃO: TODAS AS SUPERVISÕES
     if (isCoord && !supervisao) {
       const resultado = {};
-      for (const sup of SUPERVISORES_LIST) {
+      for (const sup of SUPERVISORES) {
         resultado[sup] = {
           analistas: filtrarAnalistasPor(sup),
           auxiliares: filtrarAuxiliaresPor(sup)
         };
       }
-      return res.json({ supervisores: resultado });
+      return res.json({ papel: pessoa.papel, supervisores: resultado });
     }
 
-    const targetSupervisao = supervisao || cargo;
-
-    // ---------------- COORD UMA
-    if (isCoord && SUPERVISORES_LIST.includes(targetSupervisao)) {
-      const respObj = {
-        supervisao: targetSupervisao,
-        analistas: filtrarAnalistasPor(targetSupervisao),
-        auxiliares: filtrarAuxiliaresPor(targetSupervisao),
-      };
-
-      if (tipo === "analistas") return res.json({ analistas: respObj.analistas });
-      if (tipo === "auxiliares") return res.json({ auxiliares: respObj.auxiliares });
-
-      return res.json(respObj);
+    // ---------------- COORDENAÇÃO: UMA SUPERVISÃO
+    if (isCoord) {
+      const alvo = SUPERVISORES.find(s => normalize(s) === normalize(supervisao));
+      if (!alvo) return res.status(404).json({ erro: "Supervisão não encontrada." });
+      return responderSupervisao(alvo);
     }
 
-    // ---------------- SUPERVISORA
-    if (!isCoord && SUPERVISORES_LIST.includes(cargo)) {
-      const respObj = {
-        supervisao: cargo,
-        analistas: filtrarAnalistasPor(cargo),
-        auxiliares: filtrarAuxiliaresPor(cargo),
-      };
-
-      if (tipo === "analistas") return res.json({ analistas: respObj.analistas });
-      if (tipo === "auxiliares") return res.json({ auxiliares: respObj.auxiliares });
-
-      return res.json(respObj);
-    }
-
-    return res.status(403).json({ erro: "Acesso não autorizado." });
+    // ---------------- SUPERVISÃO: SEMPRE SÓ OS SEUS COLABORADORES
+    return responderSupervisao(pessoa.nome);
 
   } catch (e) {
     console.error("Erro API:", e);
@@ -217,12 +211,22 @@ if(!usuario || !novaSenha){
 const sheets = await acessarPlanilha();
 const sheetId = process.env.SHEET_ID;
 
-const isCoord = solicitante==="Leticia Caroline Da Silva";
-
-// ===== ANALISTAS
 const CA = COLUNAS.analistas;
 const CX = COLUNAS.auxiliares;
 
+// quem está pedindo (aba Gestão)
+const gestao = await lerGestao(sheets, sheetId);
+const quem = identificar(gestao, solicitante);
+const isCoord = quem?.papel === "coordenacao";
+const isSupervisao = quem?.papel === "supervisao";
+
+function podeAlterar(supDoColaborador){
+ return isCoord ||
+   (isSupervisao && normalize(supDoColaborador) === normalize(quem.nome)) ||
+   solicitante===usuario;
+}
+
+// ===== ANALISTAS
 const analistasResp = await sheets.spreadsheets.values.get({
  spreadsheetId:sheetId,
  range:`Relatorio Analistas!${RANGES.analistas}`
@@ -237,7 +241,7 @@ for(let i=0;i<analistas.length;i++){
 
  if(nomeUser===usuario){
 
-   if(isCoord || solicitante===sup || solicitante===usuario){
+   if(podeAlterar(sup)){
 
      await sheets.spreadsheets.values.update({
        spreadsheetId:sheetId,
@@ -268,7 +272,7 @@ for(let i=0;i<aux.length;i++){
 
  if(nomeUser===usuario){
 
-   if(isCoord || solicitante===sup || solicitante===usuario){
+   if(podeAlterar(sup)){
 
      await sheets.spreadsheets.values.update({
        spreadsheetId:sheetId,
