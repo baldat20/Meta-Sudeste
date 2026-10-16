@@ -1,5 +1,5 @@
 // api/_config.js
-// Configuração central dos indicadores (set/26).
+// Configuração central dos indicadores (out/26).
 // Arquivos com "_" no início não viram endpoint na Vercel.
 
 // ------------------------------------------------------------------
@@ -8,12 +8,12 @@
 // ------------------------------------------------------------------
 const COLUNAS = {
   // Aba "Relatorio Analistas" (Consultor de COP)
-  // COLABORADORES | LOGIN | (senha) | CLUSTER | CA REPARO | CA MUD END | % ABS | TEMPO PROD |
+  // COLABORADORES | SMART | LOGIN | SENHA | ... | CA REPARO | CA MUD END | % ABS | TEMPO PROD |
   // ATG x4 | ATG TOTAL | % SALARIO | NÍVEL ATINGIDO | (hierarquia)
   analistas: {
     nome: 0,        // A  COLABORADORES
-    login: 1,       // B  LOGIN
-    senha: 2,       // C  ⚠ CONFIRMAR: no cabeçalho enviado esta coluna aparece como "CARGO"
+    login: 2,       // C  LOGIN
+    senha: 3,       // D  SENHA
     caReparo: 4,    // E  CA REPARO
     caMudEnd: 5,    // F  CA MUD END
     abs: 6,         // G  % ABS
@@ -23,12 +23,12 @@ const COLUNAS = {
     supervisao: 15  // P  ⚠ CONFIRMAR: coluna de hierarquia/supervisor (não veio no cabeçalho enviado)
   },
   // Aba "Relatorio Auxiliares" (Auxiliar de COP)
-  // COLABORADORES | LOGIN | SENHA | CLUSTER | CA MUD END | CA ATIVAÇÃO | % ABS | TEMPO PROD |
+  // COLABORADORES | SMART | LOGIN | SENHA | ... | CA MUD END | CA ATIVAÇÃO | % ABS | TEMPO PROD |
   // ATG x4 | ATG TOTAL | % SALARIO | NÍVEL ATINGIDO | Hierarquia
   auxiliares: {
     nome: 0,        // A  COLABORADORES
-    login: 1,       // B  LOGIN
-    senha: 2,       // C  SENHA
+    login: 2,       // C  LOGIN
+    senha: 3,       // D  SENHA
     caMudEnd: 4,    // E  CA MUD END
     caAtivacao: 5,  // F  CA ATIVAÇÃO
     abs: 6,         // G  % ABS
@@ -94,12 +94,12 @@ function colLetra(i) {
 }
 
 // ------------------------------------------------------------------
-// METAS POR FAIXA (set/26)
+// METAS POR FAIXA (out/26)
 // ------------------------------------------------------------------
 const METAS = {
-  caReparo:   { superacao: 91.4, definida: 86.4, toleravel: 81.4 },
-  caMudEnd:   { superacao: 88.9, definida: 83.9, toleravel: 78.9 },
-  caAtivacao: { superacao: 89.1, definida: 84.1, toleravel: 79.1 },
+  caReparo:   { superacao: 87.0, definida: 84.0, toleravel: 81.0 },
+  caMudEnd:   { superacao: 85.0, definida: 82.0, toleravel: 79.0 },
+  caAtivacao: { superacao: 85.0, definida: 82.0, toleravel: 79.0 },
   abs:        { superacao: 7.5,  definida: 10.0, toleravel: 12.5 },   // menor é melhor
   tempoProd:  { superacao: "06:35:00", definida: "06:20:00", toleravel: "06:05:00" }
 };
